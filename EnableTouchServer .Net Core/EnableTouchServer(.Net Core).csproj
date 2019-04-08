@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <RootNamespace>EnableTouchServer_.Net_Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FiddlerCore" Version="1.20181.13826-beta" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityAssetBundleTool">
+      <HintPath>..\lib\UnityAssetBundleTool.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
