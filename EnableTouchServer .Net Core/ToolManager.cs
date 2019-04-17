@@ -197,7 +197,7 @@ namespace bh3tool
                 string getway = reg_geteway.Match(qrsp).Groups[2].Value;
                 string oa = reg_oaserver.Match(qrsp).Groups[2].Value;
 
-                mod_servers[se].gameserver_url = qserverurl;
+                mod_servers[se].gameserver_url = dispatch_url;
                 mod_servers[se].gameserver_rsp = qrsp;
                 mod_servers[se].server_ip = gameserver;
                 mod_servers[se].getway_ip = getway;
