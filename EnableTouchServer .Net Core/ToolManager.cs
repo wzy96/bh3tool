@@ -182,7 +182,7 @@ namespace bh3tool
             try
             {
                 //note version number
-                string version = "?version=3.0.0_" + GetserverStr(mod_servers[se].server);
+                string version = "?version=3.1.0_" + GetserverStr(mod_servers[se].server);
                 string globaleDispatchUrl = "http://global1.bh3.com/query_dispatch" + version;
 
                 string rsp = client.DownloadString(globaleDispatchUrl);

@@ -139,7 +139,7 @@ namespace bh3tool
 
             #region Edit uiluadesign_x_x.lua.txt
             //version number
-            long uiluaid = setting.GetPathIDByName("uiluadesign_3_0.lua.txt");
+            long uiluaid = setting.GetPathIDByName("uiluadesign_3_1.lua.txt");
             var uilua = setting.m_Objects.Find(x => x.m_PathID == uiluaid);
             Textasset uiluaasset = new Textasset(uilua.data);
             //insert Lua code to function UITable.ModuleEndHandlePacket 
@@ -160,7 +160,7 @@ namespace bh3tool
             string inserthack = "		\"GalTouchModule\",";
             list = new List<string>(hack.text.Split('\n'));
             index = list.FindIndex(x => x.Contains("UILuaPatchModuleList"));
-            list.Insert(index + 2, inserthack);
+            list[index] = list[index].Insert(list[index].IndexOf('[') + 1, inserthack);
             hack.text = string.Join('\n', list);
             luahack.data = hack.GetBytes();
             #endregion
