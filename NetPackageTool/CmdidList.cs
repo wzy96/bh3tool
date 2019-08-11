@@ -39,25 +39,14 @@ namespace NetPackageTool
             string classname = "";
             int cmdid;
             string line;
-
-            Regex regex_classname = new Regex("public class ([a-zA-Z]+) : .*");
-            Regex rege_cmdid = new Regex("	public const CmdId CMD_ID = (\\d+)");
+            Regex rege_cmdid = new Regex("	public const ([a-zA-Z]+)\\.CmdId CMD_ID = (\\d+)");
             while ((line = reader.ReadLine()) != null)
             {
-                if (line == "// Namespace: proto")
+                if (line.StartsWith("	public const ") && rege_cmdid.IsMatch(line))
                 {
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        if (regex_classname.IsMatch(line))
-                        {
-                            classname = regex_classname.Match(line).Groups[1].Value;
-                            break;
-                        }
-                    }
-                }
-                if (line.StartsWith("	public const CmdId"))
-                {
-                    cmdid = Convert.ToInt32(rege_cmdid.Match(line).Groups[1].Value);
+
+                    classname = rege_cmdid.Match(line).Groups[1].Value;
+                    cmdid = Convert.ToInt32(rege_cmdid.Match(line).Groups[2].Value);
                     list.Add(new KeyValuePair<int, string>(cmdid, classname));
                 }
             }
