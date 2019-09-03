@@ -4,8 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using UABT;
+using unluac.decompile;
+using unluac.parse;
+using unluacNet;
 
 namespace bh3tool
 {
@@ -137,19 +141,41 @@ namespace bh3tool
             misc.data = miscasset.GetBytes();
             #endregion
 
-            #region Edit uiluadesign_x_x.lua.txt
+            #region Edit uiluadesign_x_x.lua.txt/.bytes
+            bool isLuac = false;
             //version number
-            long uiluaid = setting.GetPathIDByName("uiluadesign_3_1.lua.txt");
+            long uiluaid = setting.GetPathIDByName("uiluadesign_3_4.lua.txt");
+            if (uiluaid == -1)
+            {
+                isLuac = true;
+                uiluaid = setting.GetPathIDByName("uiluadesign_3_4.lua.bytes");
+            }
             var uilua = setting.m_Objects.Find(x => x.m_PathID == uiluaid);
             Textasset uiluaasset = new Textasset(uilua.data);
+            List<string> list;
+            if (isLuac)
+                //Decompile luac to lua string
+                list = DecompileLuac(uiluaasset.bytes);
+            else
+                list = new List<string>(uiluaasset.text.Split('\n'));
+
             //insert Lua code to function UITable.ModuleEndHandlePacket 
-            List<string> list = new List<string>(uiluaasset.text.Split('\n'));
             int index = list.FindIndex(x => x.Contains("UITable.ModuleEndHandlePacket"));
             //Handle NetPacketV1 for GalTouchModule,and set GalTouchModule._canGalTouch to true
             string insertStr = "\tif moduleName == \"GalTouchModule\" and packet:getCmdId() == 111 then\n\t\tlocal gal = __singletonManagerType.GetSingletonInstance(\"MoleMole.GalTouchModule\")\n\t\tif gal == nil then\n\t\t\treturn\n\t\tend\n\t\tgal._canGalTouch = true\n\tend\n";
             list.Insert(index + 1, insertStr);
             uiluaasset.text = String.Join('\n', list);
             uilua.data = uiluaasset.GetBytes();
+            #endregion
+
+            #region Edit Assetbundle
+            if (isLuac)
+            {
+                var ab = setting.m_Objects.Find(x => x.m_PathID == 1);
+                AssetBundle bundle = new AssetBundle(ab.data);
+                bundle.Rename("uiluadesign_3_4.lua.bytes", "uiluadesign_3_4.lua.txt");
+                ab.data = bundle.GetBytes();
+            }
             #endregion
 
             #region Edit luahackconfig.txt
@@ -160,7 +186,10 @@ namespace bh3tool
             string inserthack = "		\"GalTouchModule\",";
             list = new List<string>(hack.text.Split('\n'));
             index = list.FindIndex(x => x.Contains("UILuaPatchModuleList"));
-            list[index] = list[index].Insert(list[index].IndexOf('[') + 1, inserthack);
+            if (list[index].Contains('['))
+                list[index] = list[index].Insert(list[index].IndexOf('[') + 1, inserthack);
+            else
+                list.Insert(index + 2, inserthack);
             hack.text = string.Join('\n', list);
             luahack.data = hack.GetBytes();
             #endregion
@@ -235,6 +264,40 @@ namespace bh3tool
                 data[i] = (byte)Convert.ToInt32(hex.Substring(i * 2, 2), 16);
             }
             return data;
+        }
+        static int[] Opindex = { 0x09,0x22,0x02,0x1a,0x12,0x00,0x21,0x24,
+                              0x1e,0x11,0x08,0x0f,0x0c,0x17,0x03,0x23,
+                              0x0e,0x0a,0x1c,0x16,0x13,0x0b,0x04,0x0d,
+                              0x06,0x14,0x01,0x18,0x20,0x10,0x05,0x25,
+                              0x15,0x1d,0x1b,0x19,0x07,0x1f
+                            };
+        private List<string> DecompileLuac(byte[] data)
+        {
+            data[5] = 0x00;
+            ByteBuffer buffer = new ByteBuffer(data);
+            var header = new BHeader(buffer);
+            LFunction lmain = header.function.parse(buffer, header);
+            decryptcode(lmain);
+            Decompiler d = new Decompiler(lmain);
+            d.decompile();
+            MemoryStream outs = new MemoryStream();
+            StreamWriter writer = new StreamWriter(outs);
+            d.print(new Output(writer.Write, writer.WriteLine));
+            var text = Encoding.UTF8.GetString(outs.ToArray());
+            return new List<string>(text.Split('\n'));
+        }
+
+        static void decryptcode(LFunction function)
+        {
+            int[] code = function.code;
+            for (int i = 0; i < code.Length; i++)
+            {
+                var opcode = code[i] & 0x3f;
+                code[i] &= ~0x3f;
+                code[i] |= Opindex[opcode];
+            }
+            foreach (var f in function.functions)
+                decryptcode(f);
         }
 
     }

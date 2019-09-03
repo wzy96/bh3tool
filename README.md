@@ -1,6 +1,8 @@
 # bh3tool
 
-  用于从网络修改崩坏三的一些工具。具体原理以后会发布在CSDN。
+  用于从网络修改崩坏三的一些工具。
+  
+  [游戏3.4]虽然不知道还能不能用，总之更新一下。游戏用了改过Opcode顺序的luac编译了lua脚本，但是依然支持字符串格式的lua，所以用UnluacNET反编译了一下，然后把lua的后缀.bytes改为.txt就可以了。
 
 ### EnableTouchServer .Net Core
   .Net Core平台的代理服务端，可以拦截http并修改开启触摸，引用了FiddlerCore拦截http和我自己的UnityAssetBundleTool.dll修改AssetBundle。

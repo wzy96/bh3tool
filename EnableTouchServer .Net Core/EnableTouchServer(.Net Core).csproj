@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="FiddlerCore" Version="1.20181.13826-beta" />
+    <PackageReference Include="unluac.net" Version="1.1.5792.32599" />
   </ItemGroup>
 
   <ItemGroup>

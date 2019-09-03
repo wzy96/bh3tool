@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using UABT;
 
@@ -182,7 +183,7 @@ namespace bh3tool
             try
             {
                 //note version number
-                string version = "?version=3.1.0_" + GetserverStr(mod_servers[se].server);
+                string version = "?version=3.4.0_" + GetserverStr(mod_servers[se].server);
                 string globaleDispatchUrl = "http://global1.bh3.com/query_dispatch" + version;
 
                 string rsp = client.DownloadString(globaleDispatchUrl);
@@ -282,6 +283,7 @@ namespace bh3tool
     {
         public string name;
         public string text;
+        public byte[] bytes;
         public string m_pathname;
         /// <summary>
         ///  TextAsset
@@ -291,8 +293,11 @@ namespace bh3tool
         {
             EndianBinaryReader reader = new EndianBinaryReader(new MemoryStream(data), EndianType.LittleEndian);
             name = reader.ReadAlignedString();
-            text = reader.ReadAlignedString();
-            m_pathname = reader.ReadAlignedString();
+            var length = reader.ReadInt32();
+            bytes = reader.ReadBytes(length);
+            text = Encoding.UTF8.GetString(bytes);
+            reader.AlignStream(4);
+           // m_pathname = reader.ReadAlignedString();
         }
         /// <summary>
         /// TextAsset to byte[]
@@ -303,7 +308,7 @@ namespace bh3tool
             EndianBinaryWriter writer = new EndianBinaryWriter(new MemoryStream(), EndianType.LittleEndian);
             writer.WriteAlignedString(name);
             writer.WriteAlignedString(text);
-            writer.WriteAlignedString(m_pathname);
+            //writer.WriteAlignedString(m_pathname);
             writer.Position = 0;
             byte[] data = new byte[writer.BaseStream.Length];
             writer.BaseStream.Read(data, 0, data.Length);
@@ -311,6 +316,61 @@ namespace bh3tool
         }
     }
 
+    class AssetBundle
+    {
+        string name;
+        int count;
+        byte[] data1;
+        int assetcount;
+        List<string> assetname = new List<string>();
+        List<byte[]> assetinfo = new List<byte[]>();
+        byte[] data2;
+
+
+        public AssetBundle(byte[] data)
+        {
+            EndianBinaryReader reader = new EndianBinaryReader(new MemoryStream(data), EndianType.LittleEndian);
+            name = reader.ReadAlignedString();
+            count = reader.ReadInt32();
+            data1 = reader.ReadBytes(count * 12);
+            assetcount = reader.ReadInt32();
+            for (int i = 0; i < assetcount; i++)
+            {
+                assetname.Add(reader.ReadAlignedString());
+                assetinfo.Add(reader.ReadBytes(20));
+            }
+            data2 = reader.ReadBytes((int)(reader.BaseStream.Length - reader.Position));
+        }
+        public void Rename(string oldname, string newname)
+        {
+            for (int i = 0; i < assetname.Count; i++)
+            {
+                if (assetname[i].EndsWith(oldname))
+                {
+                    assetname[i] = assetname[i].Replace(oldname, newname);
+                }
+            }
+
+        }
+        public byte[] GetBytes()
+        {
+            EndianBinaryWriter writer = new EndianBinaryWriter(new MemoryStream(), EndianType.LittleEndian);
+            writer.WriteAlignedString(name);
+            writer.Write(count);
+            writer.Write(data1);
+            writer.Write(assetcount);
+            for (int i = 0; i < assetcount; i++)
+            {
+                writer.WriteAlignedString(assetname[i]);
+                writer.Write(assetinfo[i]);
+            }
+            writer.Write(data2);
+            byte[] data = new byte[writer.BaseStream.Length];
+            writer.BaseStream.Read(data, 0, data.Length);
+            return data;
+        }
+
+    }
     /// <summary>
     /// serverinfo
     /// </summary>
